@@ -12,7 +12,7 @@ import threading
 app = Flask(__name__)
 app.secret_key = 'ayam-classifier-secret-key'  # Dibutuhkan untuk flash messages
 
-model = load_model('mobilenet_chicken_model_v2_finetuned.h5')
+model = load_model('../mobilenet_chicken_model_v2_finetuned.h5')
 
 UPLOAD_FOLDER = 'static/uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
