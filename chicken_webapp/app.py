@@ -76,19 +76,14 @@ def predict():
                 flash(f"File {file.filename} terlalu besar. Maksimum 5MB.", "warning")
                 return redirect(url_for('home'))
 
-            # Upload ke Cloudinary
             try:
+                # Upload file ke Cloudinary
                 upload_result = cloudinary.uploader.upload(file, folder="ayam-classification")
                 image_url = upload_result['secure_url']
-            except Exception as e:
-                flash("Gagal upload ke Cloudinary.", "danger")
-                print(f"Cloudinary Error: {e}")
-                return redirect(url_for('home'))
 
-            # Prediksi dari Cloudinary URL
-            response = requests.get(image_url, stream=True)
-            if response.status_code == 200:
-                img = image.load_img(response.raw, target_size=(224, 224))
+                # Reset pointer file untuk prediksi lokal
+                file.seek(0)
+                img = image.load_img(file, target_size=(224, 224))
                 img_array = image.img_to_array(img)
                 img_array = np.expand_dims(img_array, axis=0)
                 img_array = preprocess_input(img_array)
@@ -99,16 +94,15 @@ def predict():
                 result_probs = {class_names[i]: f"{prediction[i]*100:.2f}%" for i in range(len(class_names))}
 
                 predictions.append({
-                    'filename': image_url,  # URL cloudinary
+                    'filename': image_url,  # pakai URL Cloudinary
                     'result': result,
                     'probs': result_probs,
                     'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 })
-
                 history.insert(0, predictions[-1])
 
-            else:
-                flash("Gagal mengunduh gambar dari Cloudinary.", "danger")
+            except Exception as e:
+                flash(f"❌ Terjadi kesalahan saat memproses gambar: {e}", "danger")
                 return redirect(url_for('home'))
         else:
             flash(f"File {file.filename} tidak didukung formatnya.", "danger")
