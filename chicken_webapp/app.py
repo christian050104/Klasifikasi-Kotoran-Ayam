@@ -30,26 +30,28 @@ model_path = 'mobilenet_chicken_model_v2_finetuned.h5'
 if not os.path.exists(model_path):
     print("🔽 Model tidak ditemukan, mendownload...")
     response = requests.get(model_url)
-    with open(model_path, 'wb') as f:
-        f.write(response.content)
-    print("✅ Model berhasil di-download.")
+    if response.status_code == 200:
+        with open(model_path, 'wb') as f:
+            f.write(response.content)
+        print("✅ Model berhasil di-download.")
+    else:
+        print("❌ Gagal mendownload model.")
+        raise Exception("Gagal mendownload model dari Google Drive.")
 
 # Load model
 model = load_model(model_path)
 
-# Mapping index ke nama kelas
+# Kelas prediksi
 class_names = ['Coccidiosis', 'Healthy', 'New Castle Disease', 'Salmonella']
-history = []  # Riwayat prediksi
+history = []  # Menyimpan riwayat prediksi
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
 MAX_FILE_SIZE_MB = 5
 
 def allowed_file(filename):
-    """Cek ekstensi file."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def file_too_large(file):
-    """Cek ukuran file."""
     file.seek(0, os.SEEK_END)
     size = file.tell()
     file.seek(0)
@@ -71,14 +73,19 @@ def predict():
     for file in files:
         if file and allowed_file(file.filename):
             if file_too_large(file):
-                flash(f"File {file.filename} terlalu besar. Maks 5MB.", "warning")
+                flash(f"File {file.filename} terlalu besar. Maksimum 5MB.", "warning")
                 return redirect(url_for('home'))
 
-            # Upload file ke Cloudinary
-            upload_result = cloudinary.uploader.upload(file, folder="ayam-classification")
-            image_url = upload_result['secure_url']
+            # Upload ke Cloudinary
+            try:
+                upload_result = cloudinary.uploader.upload(file, folder="ayam-classification")
+                image_url = upload_result['secure_url']
+            except Exception as e:
+                flash("Gagal upload ke Cloudinary.", "danger")
+                print(f"Cloudinary Error: {e}")
+                return redirect(url_for('home'))
 
-            # Download gambar dari Cloudinary URL untuk diprediksi
+            # Prediksi dari Cloudinary URL
             response = requests.get(image_url, stream=True)
             if response.status_code == 200:
                 img = image.load_img(response.raw, target_size=(224, 224))
@@ -86,27 +93,28 @@ def predict():
                 img_array = np.expand_dims(img_array, axis=0)
                 img_array = preprocess_input(img_array)
 
-                pred = model.predict(img_array)[0]
-                class_index = np.argmax(pred)
+                prediction = model.predict(img_array)[0]
+                class_index = np.argmax(prediction)
                 result = class_names[class_index]
-                result_probs = {class_names[i]: f"{pred[i]*100:.2f}%" for i in range(len(class_names))}
+                result_probs = {class_names[i]: f"{prediction[i]*100:.2f}%" for i in range(len(class_names))}
 
                 predictions.append({
-                    'filename': image_url,  # pakai URL cloudinary
+                    'filename': image_url,  # URL cloudinary
                     'result': result,
                     'probs': result_probs,
                     'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 })
 
                 history.insert(0, predictions[-1])
+
             else:
                 flash("Gagal mengunduh gambar dari Cloudinary.", "danger")
                 return redirect(url_for('home'))
         else:
-            flash(f"File {file.filename} tidak didukung.", "danger")
+            flash(f"File {file.filename} tidak didukung formatnya.", "danger")
             return redirect(url_for('home'))
 
     flash(f"Berhasil memproses {len(predictions)} gambar.", "success")
     return render_template('index.html', predictions=predictions, history=history)
 
-# Tidak perlu app.run(), Railway akan handle via Gunicorn
+# Tidak pakai app.run() karena Railway auto run pakai gunicorn
