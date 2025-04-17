@@ -16,9 +16,9 @@ app.secret_key = 'ayam-classifier-secret-key'  # Untuk flash messages
 
 # Konfigurasi Cloudinary
 cloudinary.config(
-    cloud_name="YOUR_CLOUD_NAME",
-    api_key="YOUR_API_KEY",
-    api_secret="YOUR_API_SECRET",
+    cloud_name="dbrsonwrw",
+    api_key="351131324987282",
+    api_secret="1wJ5tZ5esCcix_RgS7OFZY2reOs",
     secure=True
 )
 

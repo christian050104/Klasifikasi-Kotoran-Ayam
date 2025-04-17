@@ -87,7 +87,7 @@
       {% for pred in predictions %}
       <div class="col-md-6 col-lg-4 mb-4">
         <div class="card">
-          <img src="{{ url_for('static', filename='uploads/' + pred.filename) }}" class="card-img-top" alt="Gambar Prediksi">
+          <img src="{{ pred.filename }}" class="card-img-top" alt="Gambar Prediksi" style="max-width:100%; height:200px; object-fit:cover;">
           <div class="card-body">
             <h5 class="card-title text-success">Prediksi: {{ pred.result }}</h5>
             <p><strong>Confidence:</strong> {{ pred.probs[pred.result] }}</p>
@@ -117,18 +117,15 @@
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Mode Gelap
     function toggleDarkMode() {
       document.getElementById("body").classList.toggle("dark-mode");
       localStorage.setItem("dark-mode", document.getElementById("body").classList.contains("dark-mode"));
     }
-    // Load mode gelap dari localStorage
     window.onload = function() {
       if (localStorage.getItem("dark-mode") === "true") {
         document.getElementById("body").classList.add("dark-mode");
       }
     };
-    // Auto-show toast
     const toastElList = [].slice.call(document.querySelectorAll('.toast'));
     const toastList = toastElList.map(function (toastEl) {
       return new bootstrap.Toast(toastEl).show();
