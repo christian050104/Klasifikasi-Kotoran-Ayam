@@ -10,6 +10,7 @@ import requests
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+import io
 
 app = Flask(__name__)
 app.secret_key = 'ayam-classifier-secret-key'  # Untuk flash messages
