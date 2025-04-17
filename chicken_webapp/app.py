@@ -81,9 +81,12 @@ def predict():
                 upload_result = cloudinary.uploader.upload(file, folder="ayam-classification")
                 image_url = upload_result['secure_url']
 
-                # Reset pointer file untuk prediksi lokal
+                # Reset pointer file
                 file.seek(0)
-                img = image.load_img(file, target_size=(224, 224))
+
+                # 🔥 Ini yang diperbaiki: baca file ke BytesIO
+                file_bytes = io.BytesIO(file.read())
+                img = image.load_img(file_bytes, target_size=(224, 224))
                 img_array = image.img_to_array(img)
                 img_array = np.expand_dims(img_array, axis=0)
                 img_array = preprocess_input(img_array)
@@ -94,7 +97,7 @@ def predict():
                 result_probs = {class_names[i]: f"{prediction[i]*100:.2f}%" for i in range(len(class_names))}
 
                 predictions.append({
-                    'filename': image_url,  # pakai URL Cloudinary
+                    'filename': image_url,
                     'result': result,
                     'probs': result_probs,
                     'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -110,5 +113,3 @@ def predict():
 
     flash(f"Berhasil memproses {len(predictions)} gambar.", "success")
     return render_template('index.html', predictions=predictions, history=history)
-
-# Tidak pakai app.run() karena Railway auto run pakai gunicorn
