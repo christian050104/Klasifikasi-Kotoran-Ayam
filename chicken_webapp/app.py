@@ -6,16 +6,28 @@ import numpy as np
 import os
 import uuid
 from datetime import datetime
-import webbrowser
-import threading
+import requests
 
 app = Flask(__name__)
 app.secret_key = 'ayam-classifier-secret-key'  # Dibutuhkan untuk flash messages
 
-model = load_model('mobilenet_chicken_model_v2_finetuned.h5')
-
 UPLOAD_FOLDER = 'static/uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# URL model di Google Drive (ganti ID sesuai file kamu)
+model_url = 'https://drive.google.com/uc?id=1n0pQ3Sz3TUhuLf7ie_r3OnY3AYwZ-4Bn'
+model_path = 'mobilenet_chicken_model_v2_finetuned.h5'
+
+# Download model jika belum ada
+if not os.path.exists(model_path):
+    print("🔽 Model tidak ditemukan, mendownload...")
+    response = requests.get(model_url)
+    with open(model_path, 'wb') as f:
+        f.write(response.content)
+    print("✅ Model berhasil di-download.")
+
+# Load model
+model = load_model(model_path)
 
 # Mapping index ke nama kelas
 class_names = ['Coccidiosis', 'Healthy', 'New Castle Disease', 'Salmonella']
@@ -79,6 +91,4 @@ def predict():
     flash(f"Berhasil memproses {len(predictions)} gambar.", "success")
     return render_template('index.html', predictions=predictions, history=history)
 
-if __name__ == '__main__':
-    threading.Timer(1.5, lambda: webbrowser.open('http://localhost:5000')).start()
-    app.run(debug=True)
+# Tidak perlu pakai webbrowser atau app.run, Railway akan handle lewat gunicorn
