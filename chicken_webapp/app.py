@@ -23,14 +23,10 @@ cloudinary.config(
 )
 
 # Load model dari lokal (TIDAK dari Google Drive)
+# Langsung load model lokal
 model_path = 'mobilenet_chicken_model_v2_finetuned_fix.keras'
-
-# Pastikan file model ada
-if not os.path.exists(model_path):
-    raise FileNotFoundError(f"❌ Model {model_path} tidak ditemukan di server.")
-
-# Load model
 model = load_model(model_path)
+
 
 # Kelas prediksi
 class_names = ['Coccidiosis', 'Healthy', 'New Castle Disease', 'Salmonella']
