@@ -10,6 +10,7 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 import io
+import gdown  # ✅ karena kita mau download dari Google Drive
 
 app = Flask(__name__)
 app.secret_key = 'ayam-classifier-secret-key'  # Untuk flash messages
@@ -22,12 +23,16 @@ cloudinary.config(
     secure=True
 )
 
-# Path model lokal
+# Konfigurasi model
 MODEL_FILENAME = 'mobilenet_chicken_model_v2_finetuned_fix.keras'
+GOOGLE_DRIVE_ID = '1-PHN7VLTxsMhXOquIY9Ni_KU6sLLmFpc'  # ✅ ID dari Google Drive kamu
 
-# Pastikan model exist
+# Cek dan download model kalau belum ada
 if not os.path.exists(MODEL_FILENAME):
-    raise FileNotFoundError(f"❌ Model '{MODEL_FILENAME}' tidak ditemukan. Pastikan file ada di project!")
+    print("🔽 Model belum ada, mendownload dari Google Drive...")
+    url = f'https://drive.google.com/uc?id={GOOGLE_DRIVE_ID}'
+    gdown.download(url, MODEL_FILENAME, quiet=False)
+    print("✅ Model berhasil di-download!")
 
 # Load model
 model = load_model(MODEL_FILENAME)
@@ -107,4 +112,4 @@ def predict():
     flash(f"✅ Berhasil memproses {len(predictions)} gambar.", "success")
     return render_template('index.html', predictions=predictions, history=history)
 
-# Tidak perlu app.run(), Railway auto pakai gunicorn
+# Tidak perlu app.run() karena Railway menggunakan gunicorn
