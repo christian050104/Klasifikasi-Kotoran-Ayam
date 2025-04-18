@@ -24,8 +24,8 @@ cloudinary.config(
 )
 
 # URL model di Google Drive
-model_url = 'https://drive.google.com/uc?id=1n0pQ3Sz3TUhuLf7ie_r3OnY3AYwZ-4Bn'
-model_path = 'mobilenet_chicken_model_v2_finetuned.h5'
+model_url = 'https://drive.google.com/uc?id=1-PHN7VLTxsMhXOquIY9Ni_KU6sLLmFpc'
+model_path = 'mmobilenet_chicken_model_v2_finetuned_fix.keras'
 
 # Download model jika belum ada
 if not os.path.exists(model_path):
