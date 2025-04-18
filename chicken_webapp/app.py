@@ -11,6 +11,8 @@ import cloudinary.uploader
 import cloudinary.api
 import io
 import gdown  # ✅ karena kita mau download dari Google Drive
+import pytz  # ✅ Pastikan ini ada
+
 
 
 app = Flask(__name__)
@@ -94,12 +96,15 @@ def predict():
                 class_index = np.argmax(preds)
                 result = class_names[class_index]
                 result_probs = {class_names[i]: f"{preds[i]*100:.2f}%" for i in range(len(class_names))}
-
+                # 🔥 Waktu sesuai WIB (Asia/Jakarta)
+                jakarta_tz = pytz.timezone('Asia/Jakarta')
+                now_wib = datetime.now(jakarta_tz).strftime('%d-%m-%Y %H:%M:%S WIB')
+                
                 predictions.append({
                     'filename': image_url,
                     'result': result,
                     'probs': result_probs,
-                    'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    'time': now_wib
                 })
                 history.insert(0, predictions[-1])
 
