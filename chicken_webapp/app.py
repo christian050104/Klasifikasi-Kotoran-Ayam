@@ -6,7 +6,6 @@ import numpy as np
 import os
 import uuid
 from datetime import datetime
-import requests
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
@@ -23,36 +22,29 @@ cloudinary.config(
     secure=True
 )
 
-# URL model di Google Drive
-model_url = 'https://drive.google.com/uc?id=1-PHN7VLTxsMhXOquIY9Ni_KU6sLLmFpc'
+# Load model dari lokal (TIDAK dari Google Drive)
 model_path = 'mobilenet_chicken_model_v2_finetuned_fix.keras'
 
-# Download model jika belum ada
+# Pastikan file model ada
 if not os.path.exists(model_path):
-    print("🔽 Model tidak ditemukan, mendownload...")
-    response = requests.get(model_url)
-    if response.status_code == 200:
-        with open(model_path, 'wb') as f:
-            f.write(response.content)
-        print("✅ Model berhasil di-download.")
-    else:
-        print("❌ Gagal mendownload model.")
-        raise Exception("Gagal mendownload model dari Google Drive.")
+    raise FileNotFoundError(f"❌ Model {model_path} tidak ditemukan di server.")
 
 # Load model
 model = load_model(model_path)
 
 # Kelas prediksi
 class_names = ['Coccidiosis', 'Healthy', 'New Castle Disease', 'Salmonella']
-history = []  # Menyimpan riwayat prediksi
+history = []  # Untuk menyimpan riwayat prediksi
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
 MAX_FILE_SIZE_MB = 5
 
 def allowed_file(filename):
+    """Cek ekstensi file."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def file_too_large(file):
+    """Cek ukuran file."""
     file.seek(0, os.SEEK_END)
     size = file.tell()
     file.seek(0)
@@ -82,16 +74,17 @@ def predict():
                 upload_result = cloudinary.uploader.upload(file, folder="ayam-classification")
                 image_url = upload_result['secure_url']
 
-                # Reset pointer file
+                # Reset pointer file setelah upload
                 file.seek(0)
 
-                # 🔥 Ini yang diperbaiki: baca file ke BytesIO
+                # Load gambar dari file upload
                 file_bytes = io.BytesIO(file.read())
                 img = image.load_img(file_bytes, target_size=(224, 224))
                 img_array = image.img_to_array(img)
                 img_array = np.expand_dims(img_array, axis=0)
                 img_array = preprocess_input(img_array)
 
+                # Prediksi
                 prediction = model.predict(img_array)[0]
                 class_index = np.argmax(prediction)
                 result = class_names[class_index]
@@ -114,3 +107,5 @@ def predict():
 
     flash(f"Berhasil memproses {len(predictions)} gambar.", "success")
     return render_template('index.html', predictions=predictions, history=history)
+
+# Tidak perlu app.run(), Railway pakai gunicorn
