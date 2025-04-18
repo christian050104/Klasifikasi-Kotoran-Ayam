@@ -4,18 +4,16 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 import numpy as np
 import os
-import uuid
-from datetime import datetime
+import io
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-import io
-import gdown  # ✅ karena kita mau download dari Google Drive
+import gdown
+from datetime import datetime
 from pytz import timezone
 
-
 app = Flask(__name__)
-app.secret_key = 'ayam-classifier-secret-key'  # Untuk flash messages
+app.secret_key = 'ayam-classifier-secret-key'
 
 # Konfigurasi Cloudinary
 cloudinary.config(
@@ -25,11 +23,11 @@ cloudinary.config(
     secure=True
 )
 
-# Konfigurasi model
+# Konfigurasi Model
 MODEL_FILENAME = 'mobilenet_chicken_model_v2_finetuned_fix.keras'
-GOOGLE_DRIVE_ID = '1-PHN7VLTxsMhXOquIY9Ni_KU6sLLmFpc'  # ✅ ID dari Google Drive kamu
+GOOGLE_DRIVE_ID = '1-PHN7VLTxsMhXOquIY9Ni_KU6sLLmFpc'
 
-# Cek dan download model kalau belum ada
+# Download model jika belum ada
 if not os.path.exists(MODEL_FILENAME):
     print("🔽 Model belum ada, mendownload dari Google Drive...")
     url = f'https://drive.google.com/uc?id={GOOGLE_DRIVE_ID}'
@@ -39,11 +37,10 @@ if not os.path.exists(MODEL_FILENAME):
 # Load model
 model = load_model(MODEL_FILENAME)
 
-# Daftar nama kelas
+# Nama kelas prediksi
 class_names = ['Coccidiosis', 'Healthy', 'New Castle Disease', 'Salmonella']
-history = []  # Untuk menyimpan riwayat prediksi
+history = []
 
-# Setting upload
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
 MAX_FILE_SIZE_MB = 5
 
@@ -51,9 +48,9 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def file_too_large(file):
-    file.seek(0, os.SEEK_END)
-    size = file.tell()
-    file.seek(0)
+    file.stream.seek(0, os.SEEK_END)
+    size = file.stream.tell()
+    file.stream.seek(0)
     return size > MAX_FILE_SIZE_MB * 1024 * 1024
 
 @app.route('/')
@@ -80,12 +77,11 @@ def predict():
                 upload_result = cloudinary.uploader.upload(file, folder="ayam-classification")
                 image_url = upload_result['secure_url']
 
-                # Reset pointer file setelah upload
-                file.seek(0)
+                # Reset pointer file
+                file.stream.seek(0)
 
                 # Load gambar dari file upload
-                file_content = io.BytesIO(file.read())
-                img = image.load_img(file_content, target_size=(224, 224))
+                img = image.load_img(file.stream, target_size=(224, 224))
                 img_array = image.img_to_array(img)
                 img_array = np.expand_dims(img_array, axis=0)
                 img_array = preprocess_input(img_array)
@@ -95,9 +91,10 @@ def predict():
                 class_index = np.argmax(preds)
                 result = class_names[class_index]
                 result_probs = {class_names[i]: f"{preds[i]*100:.2f}%" for i in range(len(class_names))}
-                   # ⏰ Pakai waktu Asia/Jakarta
-                wib_time = datetime.now(timezone('Asia/Jakarta')).strftime('%Y-%m-%d %H:%M:%S')
-                
+
+                # Waktu dalam format Indonesia (WIB)
+                wib_time = datetime.now(timezone('Asia/Jakarta')).strftime('%d-%m-%Y %H:%M:%S WIB')
+
                 predictions.append({
                     'filename': image_url,
                     'result': result,
@@ -116,4 +113,4 @@ def predict():
     flash(f"✅ Berhasil memproses {len(predictions)} gambar.", "success")
     return render_template('index.html', predictions=predictions, history=history)
 
-# Tidak perlu app.run() karena Railway menggunakan gunicorn
+# Railway pakai Gunicorn, jadi tidak perlu app.run()
