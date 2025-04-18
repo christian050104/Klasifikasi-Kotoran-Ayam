@@ -11,6 +11,8 @@ import cloudinary.uploader
 import cloudinary.api
 import io
 import gdown  # ✅ karena kita mau download dari Google Drive
+from pytz import timezone
+
 
 app = Flask(__name__)
 app.secret_key = 'ayam-classifier-secret-key'  # Untuk flash messages
@@ -93,12 +95,14 @@ def predict():
                 class_index = np.argmax(preds)
                 result = class_names[class_index]
                 result_probs = {class_names[i]: f"{preds[i]*100:.2f}%" for i in range(len(class_names))}
-
+                   # ⏰ Pakai waktu Asia/Jakarta
+                wib_time = datetime.now(timezone('Asia/Jakarta')).strftime('%Y-%m-%d %H:%M:%S')
+                
                 predictions.append({
                     'filename': image_url,
                     'result': result,
                     'probs': result_probs,
-                    'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    'time': wib_time
                 })
                 history.insert(0, predictions[-1])
 
